@@ -1,7 +1,7 @@
-import { Adapter } from 'next-auth/adapters'
-import { prisma } from '../prisma'
-import { destroyCookie, parseCookies } from 'nookies'
 import { NextApiRequest, NextApiResponse, NextPageContext } from 'next'
+import { Adapter } from 'next-auth/adapters'
+import { parseCookies, destroyCookie } from 'nookies'
+import { prisma } from '../prisma'
 
 export function PrismaAdapter(
   req: NextApiRequest | NextPageContext['req'],
@@ -60,7 +60,6 @@ export function PrismaAdapter(
         avatar_url: user.avatar_url!,
       }
     },
-
     async getUserByEmail(email) {
       const user = await prisma.user.findUnique({
         where: {
@@ -81,12 +80,11 @@ export function PrismaAdapter(
         avatar_url: user.avatar_url!,
       }
     },
-
     async getUserByAccount({ providerAccountId, provider }) {
       const account = await prisma.account.findUnique({
         where: {
-          provider_id_provider_account_id: {
-            provider_id: provider,
+          provider_provider_account_id: {
+            provider,
             provider_account_id: providerAccountId,
           },
         },
@@ -136,13 +134,17 @@ export function PrismaAdapter(
     async linkAccount(account) {
       await prisma.account.create({
         data: {
-          provider_id: account.providerAccountId,
-          provider_type: account.provider,
           user_id: account.userId,
+          type: account.type,
+          provider: account.provider,
           provider_account_id: account.providerAccountId,
           refresh_token: account.refresh_token,
           access_token: account.access_token,
-          id: account.id_token,
+          expires_at: account.expires_at,
+          token_type: account.token_type,
+          scope: account.scope,
+          id_token: account.id_token,
+          session_state: account.session_state,
         },
       })
     },
@@ -153,14 +155,13 @@ export function PrismaAdapter(
           user_id: userId,
           expires,
           session_token: sessionToken,
-          access_token: '',
         },
       })
 
       return {
         userId,
-        expires,
         sessionToken,
+        expires,
       }
     },
 
@@ -182,8 +183,8 @@ export function PrismaAdapter(
 
       return {
         session: {
-          expires: session.expires,
           userId: session.user_id,
+          expires: session.expires,
           sessionToken: session.session_token,
         },
         user: {
@@ -210,8 +211,8 @@ export function PrismaAdapter(
 
       return {
         sessionToken: prismaSession.session_token,
-        expires: prismaSession.expires,
         userId: prismaSession.user_id,
+        expires: prismaSession.expires,
       }
     },
 
